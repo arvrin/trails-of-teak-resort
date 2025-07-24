@@ -2,6 +2,13 @@
   "name": "trails-of-teak",
   "version": "0.1.0",
   "private": true,
+  "description": "Luxury eco-resort booking platform with complete hotel management system",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aaryavar/trails-of-teak-resort.git"
+  },
+  "keywords": ["nextjs", "typescript", "tailwindcss", "supabase", "hotel-management", "booking-system", "luxury-resort"],
+  "author": "Aaryavar Aashirwad",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",

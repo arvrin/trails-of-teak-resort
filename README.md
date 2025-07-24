@@ -1,6 +1,6 @@
-# Trails of Teak Resort Platform
+# 🌿 Trails of Teak Resort Platform
 
-A luxury eco-resort management platform built with Next.js 14, TypeScript, Tailwind CSS, and PocketBase.
+A luxury eco-resort booking platform with complete hotel management system built with Next.js 14, TypeScript, Tailwind CSS v4, and Supabase.
 
 ![Trails of Teak Resort](./public/images/logo.png)
 
@@ -17,10 +17,13 @@ A luxury eco-resort management platform built with Next.js 14, TypeScript, Tailw
 - ✅ **Responsive Design** across all device sizes
 
 ### Backend (Completed)
-- ✅ **PocketBase Integration** for database and authentication
+- ✅ **Supabase Integration** for database and authentication  
 - ✅ **User Management** with role-based access (guest, admin, staff, housekeeping, POS)
-- ✅ **Booking Management** with status tracking
-- ✅ **Database Schema** based on ER diagram (users, rooms, bookings, invoices, etc.)
+- ✅ **Booking Management** with status tracking and debugging
+- ✅ **Complete Hotel Management System** with 6-tab admin panel
+- ✅ **Room Status Management** with real-time updates
+- ✅ **Guest Management** with profile tracking
+- ✅ **Housekeeping & Maintenance** tracking system
 
 ## 🚀 Getting Started
 
