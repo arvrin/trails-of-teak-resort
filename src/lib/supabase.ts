@@ -1,8 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
-// For now, using placeholder values - you'll replace with your Supabase project details
+// Debug environment variables
+console.log('Supabase Environment Check:', {
+  hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+  url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  keyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length || 0
+});
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
+
+if (supabaseUrl === 'https://your-project.supabase.co' || supabaseAnonKey === 'your-anon-key') {
+  console.error('❌ Supabase environment variables not configured properly!');
+  console.error('Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -123,22 +135,52 @@ export interface Settings {
 // Authentication helpers
 export const authHelpers = {
   async signUp(email: string, password: string, userData: Partial<User>) {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData
-      }
-    });
-    return { data, error };
+    console.log('🔐 SignUp attempt:', { email, hasPassword: !!password });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData
+        }
+      });
+      console.log('🔐 SignUp result:', { 
+        success: !error, 
+        error: error?.message,
+        hasUser: !!data?.user,
+        userId: data?.user?.id 
+      });
+      return { data, error };
+    } catch (networkError) {
+      console.error('🚨 SignUp network error:', networkError);
+      return { data: null, error: { message: `Network error: ${String(networkError)}` } as any };
+    }
   },
 
   async signIn(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
+    console.log('🔐 SignIn attempt:', { email, hasPassword: !!password });
+    console.log('🔐 Supabase client check:', { 
+      url: supabase.supabaseUrl,
+      hasKey: !!supabase.supabaseKey 
     });
-    return { data, error };
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      console.log('🔐 SignIn result:', { 
+        success: !error, 
+        error: error?.message,
+        hasUser: !!data?.user,
+        hasSession: !!data?.session,
+        userId: data?.user?.id 
+      });
+      return { data, error };
+    } catch (networkError) {
+      console.error('🚨 SignIn network error:', networkError);
+      return { data: null, error: { message: `Network error: ${String(networkError)}` } as any };
+    }
   },
 
   async signOut() {
@@ -169,12 +211,30 @@ export const database = {
     return { data, error };
   },
 
+  async updateUser(id: string, updates: Partial<User>) {
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    return { data, error };
+  },
+
+  async getUsers() {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+    return { data, error };
+  },
+
   // Rooms
   async getRooms() {
     const { data, error } = await supabase
       .from('rooms')
       .select('*')
-      .eq('status', 'available');
+      .order('name');
     return { data, error };
   },
 
@@ -183,6 +243,25 @@ export const database = {
       .from('rooms')
       .select('*')
       .eq('id', id)
+      .single();
+    return { data, error };
+  },
+
+  async updateRoom(id: string, updates: Partial<Room>) {
+    const { data, error } = await supabase
+      .from('rooms')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    return { data, error };
+  },
+
+  async createRoom(room: Omit<Room, 'id' | 'created_at' | 'updated_at'>) {
+    const { data, error } = await supabase
+      .from('rooms')
+      .insert(room)
+      .select()
       .single();
     return { data, error };
   },
@@ -216,6 +295,16 @@ export const database = {
       .eq('id', id)
       .select()
       .single();
+    return { data, error };
+  },
+
+  async getBookingsByDateRange(roomId: string, startDate: string, endDate: string) {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('check_in_date, check_out_date')
+      .eq('room_id', roomId)
+      .neq('status', 'cancelled')
+      .or(`and(check_in_date.lte.${endDate},check_out_date.gte.${startDate})`);
     return { data, error };
   },
 

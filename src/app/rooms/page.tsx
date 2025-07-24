@@ -199,9 +199,11 @@ export default function Rooms() {
                       <span className="text-text text-sm">per night</span>
                     </div>
                     <div className="space-x-4">
-                      <button className="glass-effect text-primary px-6 py-3 rounded-full font-medium hover-lift border border-primary/20">
-                        Virtual Tour
-                      </button>
+                      <Link href={`/rooms/${room.id}`}>
+                        <button className="glass-effect text-primary px-6 py-3 rounded-full font-medium hover-lift border border-primary/20">
+                          View Details
+                        </button>
+                      </Link>
                       <button 
                         onClick={() => handleBookNow(room)}
                         className="luxury-border bg-gradient-to-r from-accent to-yellow-400 text-primary px-8 py-3 rounded-full font-semibold hover-lift hover:scale-105 transition-all duration-300"

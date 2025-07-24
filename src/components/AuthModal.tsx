@@ -30,24 +30,44 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
     setError('');
 
     try {
+      console.log('Auth attempt:', { mode, email: formData.email });
+      
       if (mode === 'login') {
-        const { error } = await authHelpers.signIn(formData.email, formData.password);
-        if (error) throw error;
+        console.log('Attempting login...');
+        const { data, error } = await authHelpers.signIn(formData.email, formData.password);
+        console.log('Login result:', { data: !!data, error: error?.message });
+        
+        if (error) {
+          console.error('Login error:', error);
+          throw error;
+        }
+        
+        if (!data.user) {
+          throw new Error('No user returned from authentication');
+        }
+        
+        console.log('Login successful');
       } else {
         if (formData.password !== formData.passwordConfirm) {
           throw new Error('Passwords do not match');
         }
-        const { error } = await authHelpers.signUp(formData.email, formData.password, {
+        console.log('Attempting signup...');
+        const { data, error } = await authHelpers.signUp(formData.email, formData.password, {
           full_name: formData.full_name,
           phone_number: formData.phone_number,
           role: formData.role
         });
+        console.log('Signup result:', { data: !!data, error: error?.message });
         if (error) throw error;
       }
+      
       onClose();
       window.location.reload(); // Simple refresh to update auth state
     } catch (err: unknown) {
-      setError((err as Error)?.message || 'Authentication failed');
+      console.error('Authentication error:', err);
+      const errorMessage = (err as Error)?.message || 'Authentication failed';
+      console.error('Error message:', errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

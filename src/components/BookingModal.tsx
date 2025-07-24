@@ -17,10 +17,16 @@ export default function BookingModal({ isOpen, onClose, room }: BookingModalProp
     guest_count: 2,
     special_requests: ''
   });
+  const [guestInfo, setGuestInfo] = useState({
+    name: '',
+    email: '',
+    phone: ''
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [user, setUser] = useState<{id: string} | null>(null);
+  const [bookingMode, setBookingMode] = useState<'login' | 'guest'>('guest');
   
   // ALL useEffect HOOKS MUST ALSO BE AT THE TOP
   useEffect(() => {
@@ -49,7 +55,17 @@ export default function BookingModal({ isOpen, onClose, room }: BookingModalProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
+    // Validation for guest checkout
+    if (bookingMode === 'guest') {
+      if (!guestInfo.name || !guestInfo.email || !guestInfo.phone) {
+        setError('Please fill in all guest information');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email)) {
+        setError('Please enter a valid email address');
+        return;
+      }
+    } else if (!user) {
       setError('Please login to make a booking');
       return;
     }
@@ -72,14 +88,20 @@ export default function BookingModal({ isOpen, onClose, room }: BookingModalProp
 
     try {
       const bookingData = {
-        user_id: user.id!,
+        user_id: user?.id || `guest-${Date.now()}`,
         room_id: room.id!,
         check_in_date: formData.check_in_date,
         check_out_date: formData.check_out_date,
         guest_count: formData.guest_count,
         special_requests: formData.special_requests,
         total_amount: calculateTotal(),
-        status: 'pending' as const
+        status: 'pending' as const,
+        // Store guest info if booking as guest
+        ...(bookingMode === 'guest' && {
+          guest_name: guestInfo.name,
+          guest_email: guestInfo.email,
+          guest_phone: guestInfo.phone
+        })
       };
 
       await database.createBooking(bookingData);
@@ -109,6 +131,14 @@ export default function BookingModal({ isOpen, onClose, room }: BookingModalProp
     setFormData(prev => ({
       ...prev,
       [name]: name === 'guest_count' ? parseInt(value) : value
+    }));
+  };
+
+  const handleGuestInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setGuestInfo(prev => ({
+      ...prev,
+      [name]: value
     }));
   };
 
@@ -154,7 +184,35 @@ export default function BookingModal({ isOpen, onClose, room }: BookingModalProp
           </button>
         </div>
 
-        {!user && (
+        {/* Booking Mode Selection */}
+        <div className="mb-6">
+          <div className="flex gap-4 p-1 bg-gray-100 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setBookingMode('guest')}
+              className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
+                bookingMode === 'guest'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-gray-600 hover:text-primary'
+              }`}
+            >
+              Book as Guest
+            </button>
+            <button
+              type="button"
+              onClick={() => setBookingMode('login')}
+              className={`flex-1 py-3 px-4 rounded-md font-medium transition-all ${
+                bookingMode === 'login'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-gray-600 hover:text-primary'
+              }`}
+            >
+              {user ? 'Logged In' : 'Login to Book'}
+            </button>
+          </div>
+        </div>
+
+        {bookingMode === 'login' && !user && (
           <div className="bg-accent/10 border border-accent/20 rounded-lg p-4 mb-6">
             <p className="text-accent text-sm">
               Please <button className="underline font-medium">login</button> to complete your booking.
@@ -169,6 +227,51 @@ export default function BookingModal({ isOpen, onClose, room }: BookingModalProp
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Guest Information for Guest Checkout */}
+          {bookingMode === 'guest' && (
+            <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+              <h3 className="font-heading text-lg text-primary mb-4">Guest Information</h3>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-text font-medium mb-2">Full Name *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={guestInfo.name}
+                    onChange={handleGuestInfoChange}
+                    required
+                    className="w-full px-4 py-3 rounded-lg border border-divider focus:border-accent focus:outline-none transition-colors duration-300"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-text font-medium mb-2">Email Address *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={guestInfo.email}
+                    onChange={handleGuestInfoChange}
+                    required
+                    className="w-full px-4 py-3 rounded-lg border border-divider focus:border-accent focus:outline-none transition-colors duration-300"
+                    placeholder="your@email.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-text font-medium mb-2">Phone Number *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={guestInfo.phone}
+                    onChange={handleGuestInfoChange}
+                    required
+                    className="w-full px-4 py-3 rounded-lg border border-divider focus:border-accent focus:outline-none transition-colors duration-300"
+                    placeholder="+91 XXXXX XXXXX"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <label className="block text-text font-medium mb-2">Check-in Date</label>
@@ -268,7 +371,7 @@ export default function BookingModal({ isOpen, onClose, room }: BookingModalProp
 
           <button
             type="submit"
-            disabled={loading || !user}
+            disabled={loading || (bookingMode === 'login' && !user)}
             className="w-full luxury-border bg-gradient-to-r from-accent to-yellow-400 text-primary py-4 rounded-full text-lg font-semibold hover-lift hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Processing...' : 'Confirm Booking'}

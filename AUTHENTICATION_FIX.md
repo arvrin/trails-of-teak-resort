@@ -1,15 +1,24 @@
-# 🔐 Authentication Fix Guide
+# 🔐 **URGENT: Authentication Fix Guide**
 
-## Current Issue: Unable to Login on Production
+## 🚨 Current Issue: "Failed to Fetch" Login Error on Production
 
-### Quick Diagnosis Steps:
+**Root Cause**: Missing or incorrect environment variables in Vercel deployment
 
-1. **Check Vercel Environment Variables**:
-   - Go to Vercel Dashboard → Project Settings → Environment Variables
-   - Ensure these are set correctly:
-     ```
-     NEXT_PUBLIC_SUPABASE_URL=https://ypalglrgqjkcufyqepjo.supabase.co
-     NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+## 🔧 **IMMEDIATE FIX STEPS (5 minutes)**
+
+### **Step 1: Debug the Issue**
+1. Visit: `https://your-app.vercel.app/auth-debug`
+2. Check browser console for error messages
+3. Look for red error indicators on the debug page
+
+### **Step 2: Fix Vercel Environment Variables**
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Find your project → Settings → Environment Variables
+3. **DELETE** any existing Supabase variables
+4. **ADD** these exact variables for **Production**:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://ypalglrgqjkcufyqepjo.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwYWxnbHJncWprY3VmeXFlcGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNDc2MzIsImV4cCI6MjA2ODkyMzYzMn0.Iv1BAj7SKERYSHuptnW_WJspIFiZbi6XHVt8Fek8IGc
      ```
 
 2. **Check Supabase Auth Settings**:
@@ -18,9 +27,70 @@
    - **Site URL**: Add your Vercel deployment URL (e.g., `https://trails-of-teak-resort.vercel.app`)
    - **Redirect URLs**: Add your domain with `/auth/callback`
 
-3. **Test Admin Login**:
-   - Email: Use the admin email you created in Supabase
-   - Password: Use the admin password you set
+### **Step 3: Redeploy & Test**
+1. After setting environment variables, **trigger a new deployment**:
+   - Go to Vercel Dashboard → Deployments
+   - Click "Redeploy" on the latest deployment
+2. Wait for deployment to complete (2-3 minutes)
+3. **Test login** with:
+   ```
+   Email: admin@trailsofteak.com
+   Password: admin123
+   ```
+
+## ⚠️ **TROUBLESHOOTING**
+
+### **If still getting "Failed to Fetch":**
+1. **Check browser console** for exact error message
+2. **Verify environment variables** are set correctly (check /auth-debug page)
+3. **Check Supabase project status** - ensure it's not paused
+4. **Verify CORS settings** in Supabase
+
+### **Common Error Messages:**
+- **"Failed to fetch"** = Environment variables missing
+- **"Invalid API key"** = Wrong Supabase anon key
+- **"User not found"** = Need to create admin user in database
+
+## 🔧 **CREATE ADMIN USER (if needed)**
+Run this SQL in Supabase SQL Editor:
+```sql
+-- First create the auth user
+INSERT INTO auth.users (
+  id, email, encrypted_password, email_confirmed_at,
+  raw_user_meta_data, created_at, updated_at
+) VALUES (
+  gen_random_uuid(),
+  'admin@trailsofteak.com',
+  crypt('admin123', gen_salt('bf')),
+  NOW(),
+  '{"role":"admin","full_name":"Admin User"}',
+  NOW(),
+  NOW()
+);
+
+-- Then create the profile
+INSERT INTO public.users (
+  id, email, full_name, phone_number, role, created_at, updated_at
+) VALUES (
+  (SELECT id FROM auth.users WHERE email = 'admin@trailsofteak.com'),
+  'admin@trailsofteak.com',
+  'Admin User',
+  '+91 98765 43210',
+  'admin',
+  NOW(),
+  NOW()
+);
+```
+
+## ✅ **SUCCESS INDICATORS**
+- ✅ `/auth-debug` page shows all green checkmarks
+- ✅ Console shows "Supabase Environment Check" with correct values
+- ✅ Login works without "Failed to fetch" error
+- ✅ Admin dashboard loads with user name displayed
+
+---
+
+**🚀 After following these steps, authentication should work perfectly!**
 
 ### Immediate Fixes Needed:
 
