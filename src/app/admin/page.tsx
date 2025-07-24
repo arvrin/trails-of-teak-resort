@@ -408,7 +408,9 @@ export default function ComprehensiveAdminDashboard() {
       const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24));
       const calculatedAmount = bookingFormData.totalAmount || (availableRoom.price_per_night * nights);
 
-      const userId = 'temp-user-' + Date.now();
+      // Use a fixed guest UUID (you need to create this user in your database)
+      // Or run the fix-bookings-table.sql script to allow TEXT user_ids
+      const userId = '00000000-0000-0000-0000-000000000000'; // Guest user UUID
 
       const newBooking = {
         user_id: userId,
@@ -418,7 +420,10 @@ export default function ComprehensiveAdminDashboard() {
         total_amount: calculatedAmount,
         guest_count: bookingFormData.guests,
         special_requests: bookingFormData.specialRequests || null,
-        status: 'pending' as const
+        status: 'pending' as const,
+        guest_name: bookingFormData.guestName,
+        guest_email: bookingFormData.email,
+        guest_phone: bookingFormData.phone
       };
 
       console.log('Creating booking with data:', newBooking);

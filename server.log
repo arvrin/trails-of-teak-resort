@@ -25,3 +25,6 @@ Supabase Environment Check: {
  GET /admin 200 in 891ms
  ✓ Compiled in 161ms
  ✓ Compiled in 119ms
+ ✓ Compiled in 223ms
+ ✓ Compiled in 142ms
+ ✓ Compiled in 128ms

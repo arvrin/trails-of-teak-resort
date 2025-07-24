@@ -53,6 +53,9 @@ export interface Booking {
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   guest_count: number;
   special_requests?: string | null;
+  guest_name?: string;
+  guest_email?: string;
+  guest_phone?: string;
   created_at: string;
   updated_at: string;
   // Relations
