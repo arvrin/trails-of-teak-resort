@@ -1,35 +1,5 @@
--- First, ensure the rooms table exists with proper structure
-CREATE TABLE IF NOT EXISTS rooms (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  type TEXT NOT NULL,
-  price_per_night NUMERIC NOT NULL,
-  status TEXT DEFAULT 'available',
-  description TEXT,
-  size TEXT,
-  amenities JSONB,
-  image TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
-);
-
--- Enable RLS
-ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
-
--- Create policies for rooms table
--- Allow anyone to view rooms
-CREATE POLICY "Rooms are viewable by everyone" ON rooms
-  FOR SELECT USING (true);
-
--- Allow authenticated users to insert rooms (for admin)
-CREATE POLICY "Authenticated users can insert rooms" ON rooms
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
--- Allow authenticated users to update rooms
-CREATE POLICY "Authenticated users can update rooms" ON rooms
-  FOR UPDATE USING (auth.role() = 'authenticated');
-
--- Insert sample rooms (using JSONB for amenities)
+-- Insert sample rooms into existing table
+-- Using JSONB format for amenities column
 INSERT INTO rooms (name, type, price_per_night, status, description, size, amenities, image)
 VALUES 
   (

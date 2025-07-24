@@ -397,6 +397,12 @@ export default function ComprehensiveAdminDashboard() {
         return;
       }
 
+      if (!availableRoom.id) {
+        toast.error('Room data is invalid. Please refresh and try again.');
+        console.error('Room missing ID:', availableRoom);
+        return;
+      }
+
       const checkIn = new Date(bookingFormData.checkInDate);
       const checkOut = new Date(bookingFormData.checkOutDate);
       const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 3600 * 24));
@@ -406,7 +412,7 @@ export default function ComprehensiveAdminDashboard() {
 
       const newBooking = {
         user_id: userId,
-        room_id: availableRoom.id,
+        room_id: availableRoom.id!,
         check_in_date: bookingFormData.checkInDate,
         check_out_date: bookingFormData.checkOutDate,
         total_amount: calculatedAmount,
@@ -415,11 +421,15 @@ export default function ComprehensiveAdminDashboard() {
         status: 'pending' as const
       };
 
+      console.log('Creating booking with data:', newBooking);
+      console.log('Available room:', availableRoom);
+
       const result = await database.createBooking(newBooking);
       
       if (result.error) {
         console.error('Booking creation error:', result.error);
-        toast.error('Failed to create booking: ' + result.error.message);
+        console.error('Error details:', JSON.stringify(result.error, null, 2));
+        toast.error('Failed to create booking: ' + (result.error.message || 'Unknown error'));
         return;
       }
 
