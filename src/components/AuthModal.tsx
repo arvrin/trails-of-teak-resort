@@ -42,7 +42,7 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
           throw error;
         }
         
-        if (!data.user) {
+        if (!data || !data.user) {
           throw new Error('No user returned from authentication');
         }
         

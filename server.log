@@ -106,3 +106,256 @@ Supabase Environment Check: {
  HEAD /about 200 in 218ms
  ✓ Compiled /faq in 183ms
  HEAD /faq 200 in 251ms
+ ✓ Compiled in 200ms
+ ⚠ Found a change in next.config.js. Restarting the server to apply the changes...
+   ▲ Next.js 15.4.3 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.29.83:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1192ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.2s
+Supabase Environment Check: {
+  hasUrl: true,
+  url: 'https://ypalglrgqjkcufyqepjo.supabase.co',
+  hasKey: true,
+  keyLength: 208
+}
+ GET / 200 in 2599ms
+ ⚠ The "images.domains" configuration is deprecated. Please use "images.remotePatterns" configuration instead.
+ ✓ Compiled /favicon.ico in 414ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 696ms
+ ⚠ Found a change in next.config.js. Restarting the server to apply the changes...
+   ▲ Next.js 15.4.3 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.29.83:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1013ms
+ ○ Compiling /rooms ...
+ ✓ Compiled /rooms in 2s
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.bt2ah4klaso'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.bt2ah4klaso'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 614ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.01b8twblrhwq'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.01b8twblrhwq'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.bt2ah4klaso'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.bt2ah4klaso'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.uhlhnott6w'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.uhlhnott6w'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.ezc9vsu4lc5'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.ezc9vsu4lc5'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.c83kx6olite'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.c83kx6olite'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.jzuewtjgv6'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.jzuewtjgv6'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.c83kx6olite'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.c83kx6olite'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.g19ws747tmn'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.g19ws747tmn'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.vfy7xc3fgff'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.vfy7xc3fgff'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.vxaulej5ihq'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.vxaulej5ihq'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.1m2st2dtpk1'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.1m2st2dtpk1'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.vxaulej5ihq'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.vxaulej5ihq'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.cafmwxw51og'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.cafmwxw51og'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.06d0bwotze7x'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.06d0bwotze7x'
+}
+ ✓ Compiled / in 302ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.51p6rug802n'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.51p6rug802n'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.75gld7yvd0d'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.75gld7yvd0d'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.51p6rug802n'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.51p6rug802n'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.wudnh37zs5h'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.wudnh37zs5h'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.wlzuf6mko3'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.wlzuf6mko3'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.4lqsoc5aclx'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.4lqsoc5aclx'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.o3bfruo4d7f'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.o3bfruo4d7f'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.4lqsoc5aclx'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.4lqsoc5aclx'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.urquit4h9j'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.urquit4h9j'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.uzak72ijbn'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/static/development/_buildManifest.js.tmp.uzak72ijbn'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/app/page/app-build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/app/page/app-build-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/app/page/app-build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/app/page/app-build-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/app/page/app-build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/app/page/app-build-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/app/page/app-build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/app/page/app-build-manifest.json'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aaryavar/Documents/TOT/trails-of-teak/.next/server/pages/_app/build-manifest.json'
+}
+ ⚠ Found a change in next.config.js. Restarting the server to apply the changes...
+   ▲ Next.js 15.4.3 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.29.83:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 851ms
+ ○ Compiling / ...

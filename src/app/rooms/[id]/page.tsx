@@ -505,7 +505,7 @@ export default function RoomDetail() {
                 <div key={otherRoom.id} className="luxury-border rounded-3xl overflow-hidden bg-white shadow-xl hover-lift">
                   <div className="relative h-64">
                     <Image
-                      src={otherRoom.image}
+                      src={otherRoom.image || '/images/default-room.jpg'}
                       alt={otherRoom.name}
                       fill
                       className="object-cover"

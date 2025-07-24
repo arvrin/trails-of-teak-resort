@@ -34,7 +34,7 @@ export interface Room {
   name: string;
   type: string;
   price_per_night: number;
-  status: 'available' | 'occupied' | 'maintenance';
+  status: 'available' | 'occupied' | 'maintenance' | 'cleaning';
   description?: string;
   amenities?: string[];
   image?: string;
@@ -52,7 +52,7 @@ export interface Booking {
   total_amount: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   guest_count: number;
-  special_requests?: string;
+  special_requests?: string | null;
   created_at: string;
   updated_at: string;
   // Relations

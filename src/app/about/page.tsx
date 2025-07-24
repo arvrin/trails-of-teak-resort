@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -290,12 +291,12 @@ export default function About() {
             Discover what it means to stay where every moment matters.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <a
+            <Link
               href="/rooms"
               className="luxury-border bg-primary text-white px-12 py-4 rounded-full text-lg font-semibold hover-lift hover:scale-105 transition-all duration-300"
             >
               Explore Our Suites
-            </a>
+            </Link>
             <a
               href="https://wa.me/919876543210?text=Hi! I'd like to learn more about Trails of Teak and plan my stay."
               target="_blank"

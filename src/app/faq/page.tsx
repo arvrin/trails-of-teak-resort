@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from "next/image";
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ChevronDown, ChevronUp, Phone, MessageCircle, Mail } from 'lucide-react';
@@ -307,12 +308,12 @@ export default function FAQ() {
             Book your sustainable luxury getaway today
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
+            <Link
               href="/rooms"
               className="luxury-border bg-gradient-to-r from-accent to-yellow-400 text-primary px-8 py-4 rounded-full text-lg font-semibold hover-lift hover:scale-105 transition-all duration-300"
             >
               View Rooms & Book
-            </a>
+            </Link>
             <a
               href="https://wa.me/919876543210"
               target="_blank"
