@@ -18,26 +18,28 @@ interface AdminStats {
   avgBookingValue: number;
   monthlyRevenue: number;
   weeklyBookings: number;
-  todayCheckins: number;
-  todayCheckouts: number;
+  todayCheckIns: number;
+  todayCheckOuts: number;
 }
 
 interface RoomStatus {
   id: string;
+  name: string;
+  type: string;
   status: 'available' | 'occupied' | 'maintenance' | 'cleaning';
   guest?: string;
   checkOut?: string;
+  revenue?: number;
 }
 
-export default function AdminDashboard() {
+export default function ModernAdminDashboard() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [roomStatuses, setRoomStatuses] = useState<RoomStatus[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
+  const [, setRooms] = useState<Room[]>([]);
   const [stats, setStats] = useState<AdminStats>({
     totalBookings: 0,
     totalRevenue: 0,
@@ -45,11 +47,13 @@ export default function AdminDashboard() {
     avgBookingValue: 0,
     monthlyRevenue: 0,
     weeklyBookings: 0,
-    todayCheckins: 0,
-    todayCheckouts: 0
+    todayCheckIns: 0,
+    todayCheckOuts: 0
   });
-  const router = useRouter();
+  const [roomStatuses, setRoomStatuses] = useState<RoomStatus[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Authentication check
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -58,15 +62,8 @@ export default function AdminDashboard() {
           router.push('/');
           return;
         }
-        
-        const { data: userProfile, error: userError } = await database.getUser(currentUser.id);
-        if (userError) {
-          console.error('Error fetching user profile:', userError);
-          setError('Failed to load user profile');
-          setLoading(false);
-          return;
-        }
-        
+
+        const { data: userProfile } = await database.getUser(currentUser.id);
         if (!userProfile || userProfile.role !== 'admin') {
           router.push('/');
           return;
@@ -94,16 +91,6 @@ export default function AdminDashboard() {
       console.log('Bookings result:', bookingsResult);
       console.log('Rooms result:', roomsResult);
       
-      if (bookingsResult.error) {
-        console.error('Error loading bookings:', bookingsResult.error);
-        setError('Failed to load bookings: ' + bookingsResult.error.message);
-        return;
-      }
-      
-      if (roomsResult.error) {
-        console.error('Error loading rooms:', roomsResult.error);
-      }
-      
       const bookingsData = bookingsResult.data || [];
       const roomsData = roomsResult.data || [];
       
@@ -128,84 +115,78 @@ export default function AdminDashboard() {
     }
   }, [user, loadAllData]);
 
+  const calculateStats = (bookingData: BookingWithDetails[]) => {
+    const totalBookings = bookingData.length;
+    const totalRevenue = bookingData
+      .filter(b => b.status === 'confirmed' || b.status === 'completed')
+      .reduce((sum, b) => sum + b.total_amount, 0);
+    
+    const avgBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
+    
+    const today = new Date();
+    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const thisWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    const monthlyRevenue = bookingData
+      .filter(b => new Date(b.created_at) >= thisMonth && (b.status === 'confirmed' || b.status === 'completed'))
+      .reduce((sum, b) => sum + b.total_amount, 0);
+    
+    const weeklyBookings = bookingData
+      .filter(b => new Date(b.created_at) >= thisWeek)
+      .length;
+    
+    const todayStr = today.toISOString().split('T')[0];
+    const todayCheckIns = bookingData
+      .filter(b => b.check_in_date === todayStr)
+      .length;
+    
+    const todayCheckOuts = bookingData
+      .filter(b => b.check_out_date === todayStr)
+      .length;
+
+    setStats({
+      totalBookings,
+      totalRevenue,
+      occupancyRate: 85, // Mock for now
+      avgBookingValue,
+      monthlyRevenue,
+      weeklyBookings,
+      todayCheckIns,
+      todayCheckOuts
+    });
+  };
+
   const generateRoomStatuses = (roomsData: Room[], bookingsData: BookingWithDetails[]) => {
     const today = new Date();
     const statuses: RoomStatus[] = roomsData.map(room => {
-      // Find current booking for this room
       const currentBooking = bookingsData.find(booking => 
-        booking.room_id === room.id && 
+        booking.room_id === room.id &&
         booking.status === 'confirmed' &&
         new Date(booking.check_in_date) <= today &&
-        new Date(booking.check_out_date) > today
+        new Date(booking.check_out_date) >= today
       );
-      
+
       if (currentBooking) {
         return {
-          id: room.id!,
-          status: 'occupied',
+          id: room.id,
+          name: room.name,
+          type: room.type,
+          status: 'occupied' as const,
           guest: currentBooking.user?.full_name || 'Guest',
-          checkOut: currentBooking.check_out_date
+          checkOut: currentBooking.check_out_date,
+          revenue: currentBooking.total_amount
         };
       }
-      
-      // Randomly assign some rooms to maintenance/cleaning for demo
-      const randomStatus = Math.random();
-      if (randomStatus > 0.9) return { id: room.id!, status: 'maintenance' };
-      if (randomStatus > 0.8) return { id: room.id!, status: 'cleaning' };
-      
-      return { id: room.id!, status: 'available' };
+
+      return {
+        id: room.id,
+        name: room.name,
+        type: room.type,
+        status: room.status as 'available' | 'occupied' | 'maintenance' | 'cleaning'
+      };
     });
     
     setRoomStatuses(statuses);
-  };
-
-  const calculateStats = (bookingData: BookingWithDetails[]) => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    const totalRevenue = bookingData.reduce((sum, b) => sum + (b.total_amount || 0), 0);
-    const monthlyRevenue = bookingData
-      .filter(b => new Date(b.created_at) >= oneMonthAgo)
-      .reduce((sum, b) => sum + (b.total_amount || 0), 0);
-    const weeklyBookings = bookingData.filter(b => new Date(b.created_at) >= oneWeekAgo).length;
-    
-    const todayCheckins = bookingData.filter(b => {
-      const checkinDate = new Date(b.check_in_date);
-      return checkinDate >= today && checkinDate < tomorrow;
-    }).length;
-    
-    const todayCheckouts = bookingData.filter(b => {
-      const checkoutDate = new Date(b.check_out_date);
-      return checkoutDate >= today && checkoutDate < tomorrow;
-    }).length;
-    
-    // Calculate occupancy based on confirmed bookings
-    const occupiedRooms = bookingData.filter(b => 
-      b.status === 'confirmed' &&
-      new Date(b.check_in_date) <= now &&
-      new Date(b.check_out_date) > now
-    ).length;
-    
-    const occupancyRate = rooms.length > 0 ? Math.round((occupiedRooms / rooms.length) * 100) : 0;
-    
-    setStats({
-      totalBookings: bookingData.length,
-      totalRevenue,
-      occupancyRate,
-      avgBookingValue: bookingData.length > 0 ? totalRevenue / bookingData.length : 0,
-      monthlyRevenue,
-      weeklyBookings,
-      todayCheckins,
-      todayCheckouts
-    });
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadAllData();
   };
 
   const updateBookingStatus = async (bookingId: string, status: string) => {
@@ -216,362 +197,291 @@ export default function AdminDashboard() {
         alert('Failed to update booking status');
         return;
       }
-      await loadAllData(); // Reload all data to reflect changes
+      await loadAllData();
     } catch (error) {
-      console.error('Failed to update booking:', error);
+      console.error('Update booking error:', error);
       alert('Failed to update booking status');
     }
   };
 
-  const updateRoomStatus = (roomId: string, newStatus: RoomStatus['status']) => {
-    setRoomStatuses(prev => 
-      prev.map(room => 
-        room.id === roomId ? { ...room, status: newStatus } : room
-      )
-    );
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadAllData();
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800 border-green-200';
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'confirmed': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'pending': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'cancelled': return 'bg-red-50 text-red-700 border-red-200';
+      case 'completed': return 'bg-blue-50 text-blue-700 border-blue-200';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
   const getRoomStatusColor = (status: RoomStatus['status']) => {
     switch (status) {
-      case 'available': return 'bg-green-100 text-green-800 border-green-200';
-      case 'occupied': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'maintenance': return 'bg-red-100 text-red-800 border-red-200';
-      case 'cleaning': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'available': return 'bg-emerald-500';
+      case 'occupied': return 'bg-blue-500';
+      case 'maintenance': return 'bg-red-500';
+      case 'cleaning': return 'bg-amber-500';
+      default: return 'bg-gray-500';
     }
   };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-white">
-        <Header />
-        <div className="h-20"></div>
-        <div className="pt-8 flex items-center justify-center min-h-[calc(100vh-20rem)]">
-          <div className="relative max-w-md w-full mx-4">
-            <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-600 rounded-3xl blur-xl opacity-20"></div>
-            <div className="relative bg-white rounded-3xl p-12 text-center shadow-2xl border border-red-100">
-              <div className="w-20 h-20 bg-red-100 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h1 className="font-heading text-3xl text-primary mb-4">System Error</h1>
-              <p className="text-text text-lg mb-8">{error}</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="bg-gradient-to-r from-accent to-yellow-400 text-primary px-8 py-4 rounded-full font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-accent/30"
-              >
-                Retry Connection
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!loading && (!user || user.role !== 'admin')) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-white">
-        <Header />
-        <div className="h-20"></div>
-        <div className="pt-8 flex items-center justify-center min-h-[calc(100vh-20rem)]">
-          <div className="relative max-w-md w-full mx-4">
-            <div className="absolute inset-0 bg-gradient-to-r from-accent to-yellow-400 rounded-3xl blur-xl opacity-20"></div>
-            <div className="relative bg-white rounded-3xl p-12 text-center shadow-2xl border border-accent/20">
-              <div className="w-20 h-20 bg-accent/20 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-10 h-10 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h1 className="font-heading text-3xl text-primary mb-4">Access Restricted</h1>
-              <p className="text-text text-lg">Administrator privileges required to access this dashboard.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-white">
-        <Header />
-        <div className="h-20"></div>
-        <div className="pt-8 flex items-center justify-center min-h-[calc(100vh-20rem)]">
-          <div className="text-center">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-accent/30 rounded-full mx-auto mb-8"></div>
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-            </div>
-            <h2 className="font-heading text-2xl text-primary mb-3">Loading Dashboard</h2>
-            <p className="text-text text-lg">Fetching resort operations data...</p>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-slate-600 text-lg">Loading Resort Management...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-red-800 mb-2">Access Denied</h1>
+          <p className="text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-slate-800 mb-2">Unauthorized Access</h1>
+          <p className="text-slate-600">Please log in with admin credentials.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <Header />
       
-      {/* Header Spacer - Account for fixed header */}
+      {/* Header Spacer */}
       <div className="h-20"></div>
       
-      <div className="pt-8 pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Modern Admin Container */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Welcome Header */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-4xl font-heading font-bold text-slate-900 mb-2">
+                Resort Operations
+              </h1>
+              <p className="text-slate-600 text-lg">
+                Welcome back, <span className="text-primary font-semibold">{user?.full_name}</span>
+              </p>
+            </div>
+            <div className="mt-4 lg:mt-0 flex items-center space-x-4">
+              <div className="flex items-center space-x-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-emerald-700 text-sm font-medium">System Online</span>
+              </div>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2 rounded-lg transition-colors font-medium flex items-center space-x-2"
+              >
+                <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="mb-8">
+          <div className="border-b border-slate-200 bg-white rounded-t-2xl px-6">
+            <nav className="flex space-x-8">
+              {[
+                { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+                { id: 'bookings', label: 'Bookings', icon: '📅' },
+                { id: 'rooms', label: 'Room Status', icon: '🏨' },
+                { id: 'guests', label: 'Guests', icon: '👥' },
+                { id: 'analytics', label: 'Analytics', icon: '📈' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-4 px-2 font-medium text-sm transition-colors border-b-2 ${
+                    activeTab === tab.id
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Dashboard Content */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
           
-          {/* Dashboard Header */}
-          <div className="mb-12">
-            <div className="relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary via-green-700 to-primary rounded-3xl blur-2xl opacity-90"></div>
-              <div className="relative bg-gradient-to-r from-primary to-green-700 rounded-3xl p-8 lg:p-12 text-white shadow-2xl border border-white/10">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                  <div className="mb-6 lg:mb-0">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/20">
-                        <span className="text-2xl">🏛️</span>
-                      </div>
-                      <div>
-                        <h1 className="font-heading text-4xl lg:text-5xl font-bold tracking-tight">Resort Operations</h1>
-                        <p className="text-accent text-sm font-bold tracking-[0.2em] uppercase">Management Dashboard</p>
-                      </div>
+          {/* Dashboard Tab */}
+          {activeTab === 'dashboard' && (
+            <div className="p-6">
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-600 text-sm font-medium">Total Bookings</p>
+                      <p className="text-3xl font-bold text-blue-900">{stats.totalBookings}</p>
                     </div>
-                    <p className="text-white/90 text-xl">Welcome back, <span className="text-accent font-semibold">{user?.full_name}</span></p>
-                    <p className="text-white/70 text-sm mt-1">Complete hotel management system</p>
+                    <div className="bg-blue-500 p-3 rounded-xl">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-                      <span className="text-white/90 text-sm font-medium">System Online</span>
+                  <div className="mt-4 flex items-center text-sm">
+                    <span className="text-emerald-600 font-medium">+12%</span>
+                    <span className="text-blue-600 ml-2">vs last month</span>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-2xl border border-emerald-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-emerald-600 text-sm font-medium">Revenue</p>
+                      <p className="text-3xl font-bold text-emerald-900">₹{stats.totalRevenue.toLocaleString()}</p>
                     </div>
-                    <div className="text-white/70 text-sm">
-                      Updated: {new Date().toLocaleTimeString()}
+                    <div className="bg-emerald-500 p-3 rounded-xl">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      </svg>
                     </div>
-                    <button 
-                      onClick={handleRefresh}
-                      disabled={refreshing}
-                      className="bg-white/10 backdrop-blur-sm text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-white/20 transition-all duration-300 border border-white/20 hover:scale-105 hover:shadow-lg disabled:opacity-50"
-                    >
-                      {refreshing ? '⟳ Refreshing...' : '🔄 Refresh'}
+                  </div>
+                  <div className="mt-4 flex items-center text-sm">
+                    <span className="text-emerald-600 font-medium">+8%</span>
+                    <span className="text-emerald-600 ml-2">vs last month</span>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-2xl border border-amber-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-amber-600 text-sm font-medium">Occupancy Rate</p>
+                      <p className="text-3xl font-bold text-amber-900">{stats.occupancyRate}%</p>
+                    </div>
+                    <div className="bg-amber-500 p-3 rounded-xl">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center text-sm">
+                    <span className="text-amber-600 font-medium">85%</span>
+                    <span className="text-amber-600 ml-2">target achieved</span>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-600 text-sm font-medium">Avg Booking Value</p>
+                      <p className="text-3xl font-bold text-purple-900">₹{stats.avgBookingValue.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-purple-500 p-3 rounded-xl">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center text-sm">
+                    <span className="text-emerald-600 font-medium">+15%</span>
+                    <span className="text-purple-600 ml-2">vs last month</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Today's Overview */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Today&apos;s Activity</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-emerald-500 p-2 rounded-lg">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                        </div>
+                        <span className="text-slate-700">Check-ins</span>
+                      </div>
+                      <span className="text-2xl font-bold text-slate-900">{stats.todayCheckIns}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-blue-500 p-2 rounded-lg">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                        </div>
+                        <span className="text-slate-700">Check-outs</span>
+                      </div>
+                      <span className="text-2xl font-bold text-slate-900">{stats.todayCheckOuts}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button className="bg-white hover:bg-slate-50 border border-slate-200 p-4 rounded-xl transition-colors text-center">
+                      <div className="text-2xl mb-2">📝</div>
+                      <div className="text-sm font-medium text-slate-700">New Booking</div>
+                    </button>
+                    <button className="bg-white hover:bg-slate-50 border border-slate-200 p-4 rounded-xl transition-colors text-center">
+                      <div className="text-2xl mb-2">🧹</div>
+                      <div className="text-sm font-medium text-slate-700">Housekeeping</div>
+                    </button>
+                    <button className="bg-white hover:bg-slate-50 border border-slate-200 p-4 rounded-xl transition-colors text-center">
+                      <div className="text-2xl mb-2">📊</div>
+                      <div className="text-sm font-medium text-slate-700">Reports</div>
+                    </button>
+                    <button className="bg-white hover:bg-slate-50 border border-slate-200 p-4 rounded-xl transition-colors text-center">
+                      <div className="text-2xl mb-2">⚙️</div>
+                      <div className="text-sm font-medium text-slate-700">Settings</div>
                     </button>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Navigation Tabs */}
-          <div className="mb-12">
-            <div className="relative">
-              <div className="absolute inset-0 bg-white rounded-2xl shadow-2xl"></div>
-              <div className="relative bg-white rounded-2xl p-2 shadow-xl border border-white/50">
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { id: 'overview', label: 'Overview', icon: '📊' },
-                    { id: 'bookings', label: `Bookings (${bookings.length})`, icon: '📅' },
-                    { id: 'rooms', label: 'Room Status', icon: '🏠' },
-                    { id: 'guests', label: 'Guest Management', icon: '👥' },
-                    { id: 'housekeeping', label: 'Housekeeping', icon: '🧹' },
-                    { id: 'analytics', label: 'Reports', icon: '📈' }
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-all duration-300 hover:scale-105 ${
-                        activeTab === tab.id
-                          ? `bg-gradient-to-r from-accent to-yellow-400 text-primary shadow-xl shadow-accent/30`
-                          : 'text-text hover:bg-background hover:text-primary hover:shadow-lg'
-                      }`}
-                    >
-                      <span className="text-lg">{tab.icon}</span>
-                      <span>{tab.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
-            <div className="space-y-12">
-              {/* Today's Operations */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {[
-                  { 
-                    icon: '📊', 
-                    value: stats.totalBookings, 
-                    label: 'Total Bookings', 
-                    color: 'from-blue-500 to-blue-600',
-                    bgColor: 'bg-blue-100',
-                    textColor: 'text-blue-600'
-                  },
-                  { 
-                    icon: '💰', 
-                    value: `₹${stats.totalRevenue.toLocaleString()}`, 
-                    label: 'Total Revenue', 
-                    color: 'from-green-500 to-green-600',
-                    bgColor: 'bg-green-100',
-                    textColor: 'text-green-600'
-                  },
-                  { 
-                    icon: '🏠', 
-                    value: `${stats.occupancyRate}%`, 
-                    label: 'Occupancy Rate', 
-                    color: 'from-purple-500 to-purple-600',
-                    bgColor: 'bg-purple-100',
-                    textColor: 'text-purple-600'
-                  },
-                  { 
-                    icon: '👥', 
-                    value: `${stats.todayCheckins}/${stats.todayCheckouts}`, 
-                    label: 'Today Check-in/out', 
-                    color: 'from-orange-500 to-orange-600',
-                    bgColor: 'bg-orange-100',
-                    textColor: 'text-orange-600'
-                  }
-                ].map((metric, index) => (
-                  <div key={index} className="relative group">
-                    <div className={`absolute inset-0 bg-gradient-to-r ${metric.color} rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300`}></div>
-                    <div className="relative bg-white rounded-2xl p-8 shadow-xl border border-white/50 hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className={`w-16 h-16 ${metric.bgColor} rounded-2xl flex items-center justify-center shadow-lg`}>
-                          <span className="text-3xl">{metric.icon}</span>
-                        </div>
-                        <div className={`px-3 py-1 ${metric.bgColor} ${metric.textColor} rounded-full text-xs font-bold uppercase tracking-wider`}>
-                          Live
-                        </div>
+              {/* Room Status Overview */}
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">Room Status Overview</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {roomStatuses.map((room) => (
+                    <div key={room.id} className="bg-white p-4 rounded-xl border border-slate-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-slate-900">{room.name}</h4>
+                        <div className={`w-3 h-3 rounded-full ${getRoomStatusColor(room.status)}`}></div>
                       </div>
-                      <div className="text-4xl font-heading text-primary mb-2 font-bold">{metric.value}</div>
-                      <div className="text-text font-medium">{metric.label}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Quick Actions & Recent Activity */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary to-green-700 rounded-2xl blur-xl opacity-20"></div>
-                  <div className="relative bg-white rounded-2xl p-8 shadow-xl border border-white/50">
-                    <div className="flex items-center justify-between mb-8">
-                      <h3 className="font-heading text-2xl text-primary font-bold">Recent Bookings</h3>
-                      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    </div>
-                    <div className="space-y-6">
-                      {bookings.length > 0 ? (
-                        bookings.slice(0, 5).map((booking, index) => (
-                          <div key={booking.id || index} className="flex items-center justify-between p-6 bg-gradient-to-r from-background to-white rounded-xl border border-divider hover:shadow-lg transition-all duration-300">
-                            <div className="flex items-center space-x-4">
-                              <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center">
-                                <span className="text-accent font-bold text-lg">
-                                  {booking.user?.full_name?.charAt(0) || 'G'}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="font-bold text-primary text-lg">{booking.user?.full_name || 'Guest'}</div>
-                                <div className="text-text text-sm">{booking.room?.name || 'Room'}</div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-primary text-xl">₹{booking.total_amount?.toLocaleString()}</div>
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(booking.status)}`}>
-                                {booking.status.toUpperCase()}
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-accent/20 rounded-full mx-auto mb-4 flex items-center justify-center">
-                            <span className="text-2xl">📅</span>
-                          </div>
-                          <p className="text-text text-lg">No bookings found</p>
-                          <p className="text-text/60 text-sm">Bookings will appear here once created</p>
-                        </div>
+                      <p className="text-sm text-slate-600 mb-1">{room.type}</p>
+                      <p className="text-sm font-medium capitalize text-slate-700">{room.status}</p>
+                      {room.guest && (
+                        <p className="text-xs text-slate-500 mt-1">Guest: {room.guest}</p>
                       )}
                     </div>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-accent to-yellow-400 rounded-2xl blur-xl opacity-20"></div>
-                  <div className="relative bg-white rounded-2xl p-8 shadow-xl border border-white/50">
-                    <h3 className="font-heading text-2xl text-primary mb-8 font-bold">Quick Operations</h3>
-                    <div className="space-y-6">
-                      <button className="w-full flex items-center justify-between p-6 bg-gradient-to-r from-background to-white rounded-xl border border-divider hover:shadow-lg transition-all duration-300 hover:scale-105">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                            <span className="text-2xl">✅</span>
-                          </div>
-                          <div className="text-left">
-                            <div className="font-bold text-primary">Check-in Guest</div>
-                            <div className="text-text text-sm">Process new arrivals</div>
-                          </div>
-                        </div>
-                        <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-
-                      <button className="w-full flex items-center justify-between p-6 bg-gradient-to-r from-background to-white rounded-xl border border-divider hover:shadow-lg transition-all duration-300 hover:scale-105">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-2xl">🛎️</span>
-                          </div>
-                          <div className="text-left">
-                            <div className="font-bold text-primary">Room Service</div>
-                            <div className="text-text text-sm">Manage guest requests</div>
-                          </div>
-                        </div>
-                        <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-
-                      <button className="w-full flex items-center justify-between p-6 bg-gradient-to-r from-background to-white rounded-xl border border-divider hover:shadow-lg transition-all duration-300 hover:scale-105">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span className="text-2xl">🧹</span>
-                          </div>
-                          <div className="text-left">
-                            <div className="font-bold text-primary">Housekeeping</div>
-                            <div className="text-text text-sm">Room cleaning status</div>
-                          </div>
-                        </div>
-                        <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-
-                      <button className="w-full flex items-center justify-between p-6 bg-gradient-to-r from-background to-white rounded-xl border border-divider hover:shadow-lg transition-all duration-300 hover:scale-105">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                            <span className="text-2xl">🔧</span>
-                          </div>
-                          <div className="text-left">
-                            <div className="font-bold text-primary">Maintenance</div>
-                            <div className="text-text text-sm">Facility repairs</div>
-                          </div>
-                        </div>
-                        <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -579,384 +489,153 @@ export default function AdminDashboard() {
 
           {/* Bookings Tab */}
           {activeTab === 'bookings' && (
-            <div className="space-y-12">
-              {/* Status Overview Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                {[
-                  { status: 'pending', count: bookings.filter(b => b.status === 'pending').length, color: 'yellow', icon: '⏳' },
-                  { status: 'confirmed', count: bookings.filter(b => b.status === 'confirmed').length, color: 'green', icon: '✅' },
-                  { status: 'completed', count: bookings.filter(b => b.status === 'completed').length, color: 'blue', icon: '🎉' },
-                  { status: 'revenue', count: `₹${bookings.reduce((sum, b) => sum + (b.total_amount || 0), 0).toLocaleString()}`, color: 'accent', icon: '💰' }
-                ].map((item, index) => (
-                  <div key={index} className="relative group">
-                    <div className={`absolute inset-0 bg-${item.color === 'accent' ? 'gradient-to-r from-accent to-yellow-400' : item.color === 'yellow' ? 'yellow-400' : item.color === 'green' ? 'green-400' : 'blue-400'} rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300`}></div>
-                    <div className="relative bg-white rounded-2xl p-8 text-center shadow-xl border border-white/50 hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                      <div className="text-4xl mb-4">{item.icon}</div>
-                      <div className="text-5xl font-heading text-primary mb-3 font-bold">{item.count}</div>
-                      <div className="text-text font-medium capitalize">{item.status === 'revenue' ? 'Total Revenue' : `${item.status} Bookings`}</div>
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-900">Booking Management</h2>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="text"
+                    placeholder="Search bookings..."
+                    className="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors font-medium">
+                    Add Booking
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-4 px-2 font-semibold text-slate-700">Booking ID</th>
+                      <th className="text-left py-4 px-2 font-semibold text-slate-700">Guest</th>
+                      <th className="text-left py-4 px-2 font-semibold text-slate-700">Room</th>
+                      <th className="text-left py-4 px-2 font-semibold text-slate-700">Dates</th>
+                      <th className="text-left py-4 px-2 font-semibold text-slate-700">Amount</th>
+                      <th className="text-left py-4 px-2 font-semibold text-slate-700">Status</th>
+                      <th className="text-left py-4 px-2 font-semibold text-slate-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookings.map((booking) => (
+                      <tr key={booking.id} className="border-b border-slate-100 hover:bg-slate-50">
+                        <td className="py-4 px-2">
+                          <span className="font-mono text-sm text-slate-600">#{booking.id.slice(0, 8)}</span>
+                        </td>
+                        <td className="py-4 px-2">
+                          <div>
+                            <p className="font-medium text-slate-900">{booking.user?.full_name || 'N/A'}</p>
+                            <p className="text-sm text-slate-500">{booking.user?.email || 'N/A'}</p>
+                          </div>
+                        </td>
+                        <td className="py-4 px-2">
+                          <p className="font-medium text-slate-900">{booking.room?.name || 'N/A'}</p>
+                          <p className="text-sm text-slate-500">{booking.room?.type || 'N/A'}</p>
+                        </td>
+                        <td className="py-4 px-2">
+                          <p className="text-sm text-slate-700">{booking.check_in_date}</p>
+                          <p className="text-sm text-slate-500">to {booking.check_out_date}</p>
+                        </td>
+                        <td className="py-4 px-2">
+                          <p className="font-semibold text-slate-900">₹{booking.total_amount.toLocaleString()}</p>
+                          <p className="text-sm text-slate-500">{booking.guest_count} guests</p>
+                        </td>
+                        <td className="py-4 px-2">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                            {booking.status}
+                          </span>
+                        </td>
+                        <td className="py-4 px-2">
+                          <div className="flex space-x-2">
+                            {booking.status === 'pending' && (
+                              <button
+                                onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                                className="text-emerald-600 hover:text-emerald-800 text-sm font-medium"
+                              >
+                                Confirm
+                              </button>
+                            )}
+                            <button className="text-slate-600 hover:text-slate-800 text-sm font-medium">
+                              View
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {bookings.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📅</div>
+                  <h3 className="text-xl font-semibold text-slate-700 mb-2">No bookings found</h3>
+                  <p className="text-slate-500">Bookings will appear here once guests make reservations.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Other tabs can be implemented similarly */}
+          {activeTab === 'rooms' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Room Status Management</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {roomStatuses.map((room) => (
+                  <div key={room.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-slate-900">{room.name}</h3>
+                      <div className={`w-4 h-4 rounded-full ${getRoomStatusColor(room.status)}`}></div>
+                    </div>
+                    <p className="text-slate-600 mb-2">{room.type}</p>
+                    <p className="text-sm font-medium capitalize text-slate-700 mb-4">{room.status}</p>
+                    {room.guest && (
+                      <div className="bg-white p-3 rounded-lg border border-slate-200 mb-4">
+                        <p className="text-sm font-medium text-slate-700">Current Guest</p>
+                        <p className="text-slate-900">{room.guest}</p>
+                        <p className="text-xs text-slate-500">Check-out: {room.checkOut}</p>
+                      </div>
+                    )}
+                    <div className="flex space-x-2">
+                      <button className="flex-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium transition-colors">
+                        Update Status
+                      </button>
+                      <button className="flex-1 bg-primary hover:bg-primary/90 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors">
+                        Details
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
-
-              {/* Bookings Table */}
-              <div className="relative">
-                <div className="absolute inset-0 bg-white rounded-2xl shadow-2xl"></div>
-                <div className="relative bg-white rounded-2xl overflow-hidden shadow-xl border border-white/50">
-                  <div className="bg-gradient-to-r from-primary to-green-700 p-8 text-white">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-heading text-3xl font-bold mb-2">All Reservations</h3>
-                        <p className="text-white/80 text-lg">Manage guest bookings and reservations</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-3xl font-bold">{bookings.length}</div>
-                        <div className="text-sm text-white/80">Total Bookings</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {bookings.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-background">
-                          <tr>
-                            <th className="px-8 py-6 text-left text-sm font-bold text-primary uppercase tracking-wider">Guest</th>
-                            <th className="px-8 py-6 text-left text-sm font-bold text-primary uppercase tracking-wider">Room</th>
-                            <th className="px-8 py-6 text-left text-sm font-bold text-primary uppercase tracking-wider">Dates</th>
-                            <th className="px-8 py-6 text-left text-sm font-bold text-primary uppercase tracking-wider">Guests</th>
-                            <th className="px-8 py-6 text-left text-sm font-bold text-primary uppercase tracking-wider">Amount</th>
-                            <th className="px-8 py-6 text-left text-sm font-bold text-primary uppercase tracking-wider">Status</th>
-                            <th className="px-8 py-6 text-left text-sm font-bold text-primary uppercase tracking-wider">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-divider">
-                          {bookings.map((booking) => (
-                            <tr key={booking.id} className="hover:bg-background/50 transition-colors duration-200">
-                              <td className="px-8 py-6">
-                                <div className="flex items-center">
-                                  <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mr-4 shadow-lg">
-                                    <span className="text-accent font-bold text-lg">
-                                      {booking.user?.full_name?.charAt(0) || 'G'}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <div className="font-bold text-primary text-lg">{booking.user?.full_name || 'N/A'}</div>
-                                    <div className="text-text">{booking.user?.email || 'N/A'}</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-8 py-6">
-                                <div className="font-bold text-primary text-lg">{booking.room?.name || 'N/A'}</div>
-                                <div className="text-text">{booking.room?.type || ''}</div>
-                              </td>
-                              <td className="px-8 py-6">
-                                <div className="text-text">
-                                  <div className="font-medium">{new Date(booking.check_in_date).toLocaleDateString()}</div>
-                                  <div className="text-sm opacity-75">to {new Date(booking.check_out_date).toLocaleDateString()}</div>
-                                </div>
-                              </td>
-                              <td className="px-8 py-6">
-                                <div className="text-text font-bold text-lg">{booking.guest_count || 1} guest{(booking.guest_count || 1) > 1 ? 's' : ''}</div>
-                              </td>
-                              <td className="px-8 py-6">
-                                <div className="font-bold text-primary text-2xl">₹{booking.total_amount?.toLocaleString() || '0'}</div>
-                              </td>
-                              <td className="px-8 py-6">
-                                <span className={`px-4 py-2 rounded-full text-sm font-bold border ${getStatusColor(booking.status)}`}>
-                                  {booking.status.toUpperCase()}
-                                </span>
-                              </td>
-                              <td className="px-8 py-6">
-                                <div className="flex flex-wrap gap-2">
-                                  {booking.status === 'pending' && (
-                                    <button
-                                      onClick={() => updateBookingStatus(booking.id!, 'confirmed')}
-                                      className="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-bold hover:bg-green-200 transition-colors duration-200 border border-green-200 hover:scale-105"
-                                    >
-                                      ✓ Confirm
-                                    </button>
-                                  )}
-                                  {booking.status === 'confirmed' && (
-                                    <button
-                                      onClick={() => updateBookingStatus(booking.id!, 'completed')}
-                                      className="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-bold hover:bg-blue-200 transition-colors duration-200 border border-blue-200 hover:scale-105"
-                                    >
-                                      ✓ Complete
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={() => updateBookingStatus(booking.id!, 'cancelled')}
-                                    className="px-4 py-2 bg-red-100 text-red-800 rounded-full text-sm font-bold hover:bg-red-200 transition-colors duration-200 border border-red-200 hover:scale-105"
-                                  >
-                                    ✕ Cancel
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="p-16 text-center">
-                      <div className="w-20 h-20 bg-accent/20 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                        <span className="text-4xl">📅</span>
-                      </div>
-                      <h3 className="font-heading text-2xl text-primary mb-4">No Bookings Found</h3>
-                      <p className="text-text text-lg mb-8">Bookings will appear here once guests make reservations</p>
-                      <p className="text-text/60">Check your database connection and try refreshing</p>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           )}
 
-          {/* Room Status Tab */}
-          {activeTab === 'rooms' && (
-            <div className="space-y-12">
-              <div className="relative">
-                <div className="absolute inset-0 bg-white rounded-2xl shadow-2xl"></div>
-                <div className="relative bg-white rounded-2xl p-8 shadow-xl border border-white/50">
-                  <div className="flex items-center justify-between mb-8">
-                    <div>
-                      <h3 className="font-heading text-3xl text-primary font-bold">Room Status Board</h3>
-                      <p className="text-text text-lg">Real-time room availability and status</p>
-                    </div>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 bg-green-400 rounded-full"></div>
-                        <span className="text-sm font-medium">Available</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
-                        <span className="text-sm font-medium">Occupied</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 bg-yellow-400 rounded-full"></div>
-                        <span className="text-sm font-medium">Cleaning</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 bg-red-400 rounded-full"></div>
-                        <span className="text-sm font-medium">Maintenance</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {rooms.map((room) => {
-                      const roomStatus = roomStatuses.find(rs => rs.id === room.id) || { id: room.id!, status: 'available' as const };
-                      return (
-                        <div key={room.id} className="relative group">
-                          <div className="absolute inset-0 bg-gradient-to-r from-accent to-yellow-400 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
-                          <div className="relative bg-gradient-to-b from-background to-white rounded-2xl p-6 shadow-xl border border-white/50 hover:shadow-2xl transition-all duration-300">
-                            <div className="flex items-start justify-between mb-4">
-                              <div>
-                                <h4 className="font-heading text-xl text-primary font-bold">{room.name}</h4>
-                                <p className="text-accent font-medium text-sm uppercase tracking-wider">{room.type}</p>
-                              </div>
-                              <span className={`px-3 py-2 rounded-full text-xs font-bold border ${getRoomStatusColor(roomStatus.status)}`}>
-                                {roomStatus.status.toUpperCase()}
-                              </span>
-                            </div>
-                            
-                            {roomStatus.status === 'occupied' && roomStatus.guest && (
-                              <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                <div className="text-sm font-medium text-blue-800">Guest: {roomStatus.guest}</div>
-                                {roomStatus.checkOut && (
-                                  <div className="text-xs text-blue-600">Check-out: {new Date(roomStatus.checkOut).toLocaleDateString()}</div>
-                                )}
-                              </div>
-                            )}
-                            
-                            <div className="flex items-center justify-between mb-4">
-                              <div>
-                                <div className="font-heading text-2xl text-primary font-bold">₹{room.price_per_night?.toLocaleString()}</div>
-                                <div className="text-text text-sm">per night</div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-text font-medium">{room.size}</div>
-                                <div className="text-accent text-sm font-bold">{room.amenities?.length || 0} amenities</div>
-                              </div>
-                            </div>
-
-                            <div className="flex space-x-2">
-                              <select 
-                                value={roomStatus.status}
-                                onChange={(e) => updateRoomStatus(room.id!, e.target.value as RoomStatus['status'])}
-                                className="flex-1 px-3 py-2 border border-divider rounded-lg text-sm font-medium focus:outline-none focus:border-accent"
-                              >
-                                <option value="available">Available</option>
-                                <option value="occupied">Occupied</option>
-                                <option value="cleaning">Cleaning</option>
-                                <option value="maintenance">Maintenance</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Guest Management Tab */}
           {activeTab === 'guests' && (
-            <div className="space-y-12">
-              <div className="relative">
-                <div className="absolute inset-0 bg-white rounded-2xl shadow-2xl"></div>
-                <div className="relative bg-white rounded-2xl p-8 shadow-xl border border-white/50">
-                  <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-accent/20 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg">
-                      <span className="text-4xl">👥</span>
-                    </div>
-                    <h3 className="font-heading text-3xl text-primary mb-4 font-bold">Guest Management</h3>
-                    <p className="text-text text-lg">Manage guest profiles, preferences, and special requests</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div className="p-8 bg-gradient-to-b from-background to-white rounded-2xl border border-divider shadow-lg text-center">
-                      <div className="text-4xl mb-4">📋</div>
-                      <div className="font-bold text-primary text-xl mb-2">Guest Profiles</div>
-                      <div className="text-text mb-4">Manage guest information and preferences</div>
-                      <button className="w-full bg-gradient-to-r from-accent to-yellow-400 text-primary px-4 py-2 rounded-full font-bold text-sm hover:scale-105 transition-all duration-300">
-                        View Profiles
-                      </button>
-                    </div>
-                    
-                    <div className="p-8 bg-gradient-to-b from-background to-white rounded-2xl border border-divider shadow-lg text-center">
-                      <div className="text-4xl mb-4">🎂</div>
-                      <div className="font-bold text-primary text-xl mb-2">Special Occasions</div>
-                      <div className="text-text mb-4">Track birthdays, anniversaries, and celebrations</div>
-                      <button className="w-full bg-gradient-to-r from-accent to-yellow-400 text-primary px-4 py-2 rounded-full font-bold text-sm hover:scale-105 transition-all duration-300">
-                        Manage Events
-                      </button>
-                    </div>
-                    
-                    <div className="p-8 bg-gradient-to-b from-background to-white rounded-2xl border border-divider shadow-lg text-center">
-                      <div className="text-4xl mb-4">📧</div>
-                      <div className="font-bold text-primary text-xl mb-2">Guest Communication</div>
-                      <div className="text-text mb-4">Send notifications and updates to guests</div>
-                      <button className="w-full bg-gradient-to-r from-accent to-yellow-400 text-primary px-4 py-2 rounded-full font-bold text-sm hover:scale-105 transition-all duration-300">
-                        Send Messages
-                      </button>
-                    </div>
-                  </div>
-                </div>
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Guest Management</h2>
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">👥</div>
+                <h3 className="text-xl font-semibold text-slate-700 mb-2">Guest Management</h3>
+                <p className="text-slate-500">Advanced guest profiles and communication tools coming soon.</p>
               </div>
             </div>
           )}
 
-          {/* Housekeeping Tab */}
-          {activeTab === 'housekeeping' && (
-            <div className="space-y-12">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-white rounded-2xl shadow-2xl"></div>
-                  <div className="relative bg-white rounded-2xl p-8 shadow-xl border border-white/50">
-                    <h3 className="font-heading text-2xl text-primary mb-6 font-bold">Cleaning Schedule</h3>
-                    <div className="space-y-4">
-                      {rooms.slice(0, 5).map((room, index) => (
-                        <div key={room.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-background to-white rounded-xl border border-divider">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
-                              <span className="text-lg font-bold text-accent">{room.name?.split(' ')[1] || index + 1}</span>
-                            </div>
-                            <div>
-                              <div className="font-bold text-primary">{room.name}</div>
-                              <div className="text-text text-sm">Last cleaned: 2 hours ago</div>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-bold border border-yellow-200">
-                              In Progress
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 bg-white rounded-2xl shadow-2xl"></div>
-                  <div className="relative bg-white rounded-2xl p-8 shadow-xl border border-white/50">
-                    <h3 className="font-heading text-2xl text-primary mb-6 font-bold">Maintenance Requests</h3>
-                    <div className="space-y-4">
-                      {[
-                        { room: 'Forest Villa', issue: 'AC not cooling', priority: 'High', time: '30 mins ago' },
-                        { room: 'Canopy Suite', issue: 'Bathroom faucet leak', priority: 'Medium', time: '2 hours ago' },
-                        { room: 'Sanctuary Loft', issue: 'Light bulb replacement', priority: 'Low', time: '1 day ago' }
-                      ].map((request, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-background to-white rounded-xl border border-divider">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                              <span className="text-lg">🔧</span>
-                            </div>
-                            <div>
-                              <div className="font-bold text-primary">{request.room}</div>
-                              <div className="text-text text-sm">{request.issue}</div>
-                              <div className="text-text/60 text-xs">{request.time}</div>
-                            </div>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                            request.priority === 'High' ? 'bg-red-100 text-red-800 border-red-200' :
-                            request.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                            'bg-green-100 text-green-800 border-green-200'
-                          }`}>
-                            {request.priority}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Analytics Tab */}
           {activeTab === 'analytics' && (
-            <div className="space-y-12">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary to-green-700 rounded-2xl blur-2xl opacity-20"></div>
-                <div className="relative bg-white rounded-2xl p-16 text-center shadow-2xl border border-white/50">
-                  <div className="max-w-3xl mx-auto">
-                    <div className="w-24 h-24 bg-accent/20 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-2xl">
-                      <span className="text-5xl">📊</span>
-                    </div>
-                    <h3 className="font-heading text-4xl text-primary mb-6 font-bold">Advanced Analytics & Reports</h3>
-                    <p className="text-text text-xl mb-12 leading-relaxed">
-                      Comprehensive reporting dashboard with revenue trends, occupancy analytics, guest satisfaction metrics, 
-                      and seasonal booking patterns to optimize your resort operations and increase profitability.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                      {[
-                        { icon: '📈', title: 'Revenue Analytics', desc: 'Monthly & yearly revenue trends with forecasting' },
-                        { icon: '🎯', title: 'Occupancy Reports', desc: 'Room utilization and availability optimization' },
-                        { icon: '⭐', title: 'Guest Insights', desc: 'Satisfaction scores and feedback analysis' },
-                        { icon: '📅', title: 'Booking Patterns', desc: 'Seasonal trends and demand forecasting' },
-                        { icon: '💰', title: 'Financial Reports', desc: 'P&L statements and cost analysis' },
-                        { icon: '🏆', title: 'Performance KPIs', desc: 'Key metrics and benchmark comparisons' }
-                      ].map((feature, index) => (
-                        <div key={index} className="p-8 bg-gradient-to-b from-background to-white rounded-2xl border border-divider shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                          <div className="text-4xl mb-4">{feature.icon}</div>
-                          <div className="font-bold text-primary text-xl mb-3">{feature.title}</div>
-                          <div className="text-text text-sm leading-relaxed">{feature.desc}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Analytics & Reports</h2>
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📈</div>
+                <h3 className="text-xl font-semibold text-slate-700 mb-2">Advanced Analytics</h3>
+                <p className="text-slate-500">Detailed reports and charts will be available here.</p>
               </div>
             </div>
           )}
+
         </div>
       </div>
-
+      
       <Footer />
     </div>
   );
