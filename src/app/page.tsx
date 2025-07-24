@@ -196,7 +196,7 @@ export default function Home() {
       <section className="py-24 bg-gradient-to-r from-background to-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="luxury-border rounded-3xl p-12 bg-white shadow-2xl">
-            <div className="text-6xl text-accent mb-8">"</div>
+            <div className="text-6xl text-accent mb-8">&ldquo;</div>
             <blockquote className="font-heading text-3xl md:text-4xl text-primary mb-8 leading-relaxed">
               A sanctuary where time stands still and the soul finds its rhythm with nature
             </blockquote>

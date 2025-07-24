@@ -46,8 +46,8 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
       }
       onClose();
       window.location.reload(); // Simple refresh to update auth state
-    } catch (err: any) {
-      setError(err?.message || 'Authentication failed');
+    } catch (err: unknown) {
+      setError((err as Error)?.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }

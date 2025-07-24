@@ -191,7 +191,7 @@ export default function Gallery() {
               <div className="glass-effect rounded-2xl p-8 hover-lift">
                 <div className="text-3xl font-heading text-accent mb-4">4K</div>
                 <h3 className="font-heading text-xl mb-2">Time-lapse Videos</h3>
-                <p className="text-sm opacity-80">Watch nature's daily dance of light and shadow</p>
+                <p className="text-sm opacity-80">Watch nature&apos;s daily dance of light and shadow</p>
               </div>
               <div className="glass-effect rounded-2xl p-8 hover-lift">
                 <div className="text-3xl font-heading text-accent mb-4">∞</div>

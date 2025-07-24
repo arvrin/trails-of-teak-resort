@@ -17,7 +17,9 @@ const rooms: Room[] = [
     image: "/images/room-bed.jpg",
     amenities: ["Private Deck", "Forest View", "Teak Interiors", "King Bed", "Meditation Space"],
     size: "65 sqm",
-    status: "available"
+    status: "available",
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z"
   },
   {
     id: "2",
@@ -28,7 +30,9 @@ const rooms: Room[] = [
     image: "/images/room-bed-table.jpg",
     amenities: ["Canopy Views", "Stone Bath", "Floor-to-ceiling Windows", "Premium Bedding", "Mini Bar"],
     size: "80 sqm",
-    status: "available"
+    status: "available",
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z"
   },
   {
     id: "3",
@@ -39,7 +43,9 @@ const rooms: Room[] = [
     image: "/images/room-chairs.jpg",
     amenities: ["Two-story", "Private Terrace", "Outdoor Shower", "Nature Guide", "Premium Service"],
     size: "120 sqm",
-    status: "available"
+    status: "available",
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z"
   }
 ];
 
@@ -155,7 +161,7 @@ export default function Rooms() {
               <div key={room.id} className={`grid lg:grid-cols-2 gap-12 items-center ${index % 2 === 1 ? 'lg:grid-cols-2' : ''}`}>
                 <div className={`relative h-96 lg:h-[500px] rounded-3xl overflow-hidden hover-lift group ${index % 2 === 1 ? 'lg:order-2' : ''}`}>
                   <Image
-                    src={room.image}
+                    src={room.image || '/images/default-room.jpg'}
                     alt={room.name}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-700"
@@ -178,7 +184,7 @@ export default function Rooms() {
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {room.amenities.map((amenity, idx) => (
+                    {room.amenities?.map((amenity, idx) => (
                       <div key={idx} className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-accent rounded-full"></div>
                         <span className="text-text text-sm">{amenity}</span>

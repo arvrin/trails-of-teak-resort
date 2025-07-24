@@ -16,7 +16,20 @@ export default function Header() {
   const pathname = usePathname();
 
   useEffect(() => {
-    authHelpers.getCurrentUser().then(setUser);
+    authHelpers.getCurrentUser().then((authUser) => {
+      if (authUser) {
+        // For now, just set basic user info - in production you'd fetch the full profile
+        setUser({
+          id: authUser.id,
+          email: authUser.email || '',
+          full_name: authUser.user_metadata?.full_name || 'Admin User',
+          phone_number: authUser.user_metadata?.phone_number || '',
+          role: authUser.user_metadata?.role || 'admin',
+          created_at: '',
+          updated_at: ''
+        });
+      }
+    });
   }, []);
 
   useEffect(() => {

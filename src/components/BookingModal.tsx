@@ -20,7 +20,7 @@ export default function BookingModal({ isOpen, onClose, room }: BookingModalProp
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{id: string} | null>(null);
   
   // ALL useEffect HOOKS MUST ALSO BE AT THE TOP
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function BookingModal({ isOpen, onClose, room }: BookingModalProp
         guest_count: formData.guest_count,
         special_requests: formData.special_requests,
         total_amount: calculateTotal(),
-        status: 'pending'
+        status: 'pending' as const
       };
 
       await database.createBooking(bookingData);

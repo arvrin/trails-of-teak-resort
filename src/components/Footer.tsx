@@ -58,7 +58,7 @@ export default function Footer() {
               </div>
               
               <p className="text-white/90 text-base leading-relaxed">
-                Where ancient forests meet modern luxury. Experience sustainable hospitality in harmony with nature's splendor.
+                Where ancient forests meet modern luxury. Experience sustainable hospitality in harmony with nature&apos;s splendor.
               </p>
 
               {/* Social Links */}

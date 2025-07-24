@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { authHelpers, database, Booking, Room, User } from '@/lib/supabase';
 import Header from '@/components/Header';
@@ -73,7 +73,6 @@ export default function AdminDashboard() {
         }
         
         setUser(userProfile);
-        await loadAllData();
       } catch (err) {
         console.error('Error in checkUser:', err);
         setError('Authentication error');
@@ -84,7 +83,7 @@ export default function AdminDashboard() {
     checkUser();
   }, [router]);
 
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     try {
       console.log('Loading admin data...');
       const [bookingsResult, roomsResult] = await Promise.all([
@@ -120,7 +119,14 @@ export default function AdminDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
+
+  // Load data when user is authenticated
+  useEffect(() => {
+    if (user) {
+      loadAllData();
+    }
+  }, [user, loadAllData]);
 
   const generateRoomStatuses = (roomsData: Room[], bookingsData: BookingWithDetails[]) => {
     const today = new Date();
@@ -204,7 +210,7 @@ export default function AdminDashboard() {
 
   const updateBookingStatus = async (bookingId: string, status: string) => {
     try {
-      const result = await database.updateBookingStatus(bookingId, status as any);
+      const result = await database.updateBookingStatus(bookingId, status as 'pending' | 'confirmed' | 'cancelled' | 'completed');
       if (result.error) {
         console.error('Error updating booking status:', result.error);
         alert('Failed to update booking status');
@@ -342,7 +348,7 @@ export default function AdminDashboard() {
                         <p className="text-accent text-sm font-bold tracking-[0.2em] uppercase">Management Dashboard</p>
                       </div>
                     </div>
-                    <p className="text-white/90 text-xl">Welcome back, <span className="text-accent font-semibold">{user.full_name}</span></p>
+                    <p className="text-white/90 text-xl">Welcome back, <span className="text-accent font-semibold">{user?.full_name}</span></p>
                     <p className="text-white/70 text-sm mt-1">Complete hotel management system</p>
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">

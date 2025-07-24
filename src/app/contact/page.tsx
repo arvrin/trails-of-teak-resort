@@ -60,7 +60,7 @@ export default function Contact() {
       
       // Hide success message after 5 seconds
       setTimeout(() => setSuccess(false), 5000);
-    } catch (err) {
+    } catch {
       setError('Failed to send message. Please try again.');
     } finally {
       setLoading(false);
@@ -191,12 +191,12 @@ export default function Contact() {
               <div className="mb-8">
                 <h3 className="font-heading text-3xl text-primary mb-4">Send us a Message</h3>
                 <div className="w-16 h-px bg-accent mb-4"></div>
-                <p className="text-text">Share your dreams with us, and we'll help bring them to life in nature's embrace.</p>
+                <p className="text-text">Share your dreams with us, and we&apos;ll help bring them to life in nature&apos;s embrace.</p>
               </div>
 
 {success && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                  <p className="text-green-600 text-sm">Message sent successfully! We'll get back to you soon.</p>
+                  <p className="text-green-600 text-sm">Message sent successfully! We&apos;ll get back to you soon.</p>
                 </div>
               )}
 
